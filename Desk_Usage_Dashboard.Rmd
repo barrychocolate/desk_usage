@@ -1,16 +1,14 @@
 ---
 title: "Desk Usage"
 output: 
-  flexdashboard::flex_dashboard:
-    orientation: columns
-    vertical_layout: fill
-    storyboard: true
+  flexdashboard::flex_dashboard
+
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = FALSE)
 
-list_of_packages <- c("dplyr", "flexdashboard")
+list_of_packages <- c("dplyr", "flexdashboard", "scales")
 
 new_packages <- list_of_packages[!(list_of_packages %in% installed.packages()[,"Package"])]
 if(length(new_packages)) install.packages(new_packages, repos = "https://cloud.r-project.org/")
@@ -32,6 +30,7 @@ staff_total <- count(people)
 #Total number of teams
 teams_total <- desks %>%
 	group_by(Team) %>%
+	summarise(staff = n())%>%
 	summarise(staff = n())
 
 #Unique visitors to the building in 
@@ -39,33 +38,66 @@ unique_visitors_per_year <-   filter(attendance, Visitor_Flag == "Yes") %>%
 	group_by(Username) %>%
 	summarise(count = n()) %>%
 	summarise(count = n()) 
+
+
+# utilisation of the building by day
+utilisation_by_day <- attendance %>%
+  group_by(Date) %>%
+  summarise(count = n())
+
+max_utilisation<- top_n(utilisation_by_day, 1, utilisation_by_day$count)
+
+max_utilisation_date = max_utilisation$Date
+
+max_utilisation_perc <- round((max_utilisation$count / desk_total$n) * 100, 0)
+  
+
 ```
+
 
 Summary Stats
 =====================================  
 
+
 Column {data-width=650}
 -----------------------------------------------------------------------
 
-### Desks
+### Desk Usage Optimisation
 
-```{r}
-
-```
+Explanation of the challenge and our approach goes here.
 
 Column {data-width=350}
 -----------------------------------------------------------------------
 
-### Chart B
+### Desk Total
 
-```{r}
-
+```{r echo=FALSE, eval=TRUE}
+valueBox(desk_total, caption = "Total number of Desks", icon="fa-building")
 ```
 
-### Chart C
+### Staff Total
 
 ```{r}
-valueBox(4380, caption = "Desks", icon="fa-thumbs-down")
+valueBox(staff_total, caption = "Total number of Staff", icon="fa-user-tie")
+```
+
+### Teams Total
+
+```{r}
+valueBox(teams_total, caption = "Total number of teams", icon="fa-users")
+```
+
+### Max Building Utilisation
+
+```{r}
+gauge(max_utilisation_perc, min = 0, max = 100, symbol = '%', gaugeSectors(
+  success = c(80, 100), warning = c(40, 79), danger = c(0, 39)))
+```
+
+### Max Building Utilisation Date
+
+```{r}
+valueBox(max_utilisation_date, caption = "Max Utilisation Date", icon="fa-calendar-alt")
 ```
 
 Heat Map
