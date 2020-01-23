@@ -8,7 +8,7 @@ output:
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE)
 
-list_of_packages <- c("dplyr", "flexdashboard", "scales")
+list_of_packages <- c("dplyr", "tidyverse", "flexdashboard", "scales")
 
 new_packages <- list_of_packages[!(list_of_packages %in% installed.packages()[,"Package"])]
 if(length(new_packages)) install.packages(new_packages, repos = "https://cloud.r-project.org/")
@@ -22,6 +22,9 @@ lapply(list_of_packages, library, character.only = TRUE)
 attendance <- read.csv("C:/Analysis/R_Studio/Hackathon/data/Problem 3 Desk Usage/attendance.csv")
 desks <-  read.csv("C:/Analysis/R_Studio/Hackathon/data/Problem 3 Desk Usage/desks.csv")
 people <- read.csv("C:/Analysis/R_Studio/Hackathon/data/Problem 3 Desk Usage/people.csv")
+
+#Attendance - convert to date
+attendance$Date <- as.Date(attendance$Date, "%d/%m/%Y")
 
 #Total number of desks in the building
 desk_total <- as.vector(count(desks))
@@ -45,12 +48,50 @@ utilisation_by_day <- attendance %>%
   group_by(Date) %>%
   summarise(count = n())
 
+#Desk utilistation annually
+toal_utilised_desks_annual <- sum(utilisation_by_day$count)
+total_available_desks_annual <- nrow(desks) * nrow(utilisation_by_day)
+total_unused_desks_annual <- total_available_desks_annual - toal_utilised_desks_annual
+
+#Desk utilisation daily
 max_utilisation<- top_n(utilisation_by_day, 1, utilisation_by_day$count)
-
 max_utilisation_date = max_utilisation$Date
-
 max_utilisation_perc <- round((max_utilisation$count / desk_total$n) * 100, 0)
   
+#Heatmap Data
+attendance_by_date_team <- attendance %>%
+  group_by(Date, Team) %>%
+  summarise(count = n())
+
+#Get team desk allocation
+team_desk_allocation <- desks %>%
+	group_by(Team) %>%
+	summarise(daily_alocation = n())
+
+#Join data
+heatmap_data <- merge(x = attendance_by_date_team, y = team_desk_allocation, by = "Team", all.x = TRUE)
+
+#replace na with zero
+heatmap_data[is.na(heatmap_data)] <- 0
+
+#Calculate weekday
+heatmap_data$day <- weekdays(as.Date(heatmap_data$Date))
+
+#Calculate teams daily usage based on allocation
+heatmap_data$team_util_perc <- round((heatmap_data$count / heatmap_data$daily_alocation ) * 100, digits = 0)
+heatmap_data$team_util_perc[heatmap_data$daily_alocation==0] <- 101
+
+#Transpose data to make a table for the heatmap
+drops <- c("count","daily_alocation", "day")
+heatmap_data <- heatmap_data[ , !(names(heatmap_data) %in% drops)]
+
+heatmap_data <- heatmap_data %>%
+  spread(Team, team_util_perc)
+
+#order by date
+heatmap_data <- subset( heatmap_data, select = -Date )
+
+
 
 ```
 
@@ -65,23 +106,51 @@ Row
 ### Desk Total
 
 ```{r echo=FALSE, eval=TRUE}
-valueBox(desk_total, caption = "Total number of Desks", icon="fa-building")
+valueBox(format(desk_total$n, big.mark=","), caption = "Total number of Desks", icon="fa-desktop")
 ```
 
 ### Staff Total
 
 ```{r}
-valueBox(staff_total, caption = "Total number of Staff", icon="fa-user-tie")
+valueBox(format(staff_total$n, big.mark=","), caption = "Total number of Staff", icon="fa-user")
 ```
 
 ### Teams Total
 
 ```{r}
-valueBox(teams_total, caption = "Total number of teams", icon="fa-users")
+valueBox(format(teams_total$staff, big.mark=","), caption = "Total number of teams", icon="fa-users")
 ```
 
 Row
 -----------------------------------------------------------------------
+
+### Annual desk availability
+
+```{r}
+valueBox(format(total_available_desks_annual, big.mark=","), caption = "desks available in period")
+```
+
+###  Annual Desk Utilisation
+
+```{r}
+valueBox(format(toal_utilised_desks_annual, big.mark=","), caption= "desks utilised in period") 
+```
+
+### Annuafl desks unused
+```{r}
+valueBox(format(total_unused_desks_annual, big.mark=","), caption = "Unused desks in period")
+```
+
+
+Row
+-----------------------------------------------------------------------
+
+### Unique Visitors per year
+
+```{r}
+valueBox(format(unique_visitors_per_year$count, big.mark = ","), caption = "unique visitors in period", icon="fa-user-tie")
+```
+
 
 ### Max Building Utilisation Date
 
@@ -89,13 +158,12 @@ Row
 valueBox(max_utilisation_date, caption = "Max Utilisation Date", icon="fa-calendar-alt")
 ```
 
-### Max Building Utilisation
+### Max Daily Building Utilisation
 
 ```{r}
 gauge(max_utilisation_perc, min = 0, max = 100, symbol = '%', gaugeSectors(
   success = c(80, 100), warning = c(40, 79), danger = c(0, 39)))
 ```
-
 
 Row
 -----------------------------------------------------------------------
@@ -104,6 +172,14 @@ Explanation of the project and our approach goes here
 
 Heat Map
 =====================================  
+
+
+Row
+-----------------------------------------------------------------------
+```{r}
+# Default Heatmap
+#heatmap(as.matrix(heatmap_data))
+```
 
 
 Model
