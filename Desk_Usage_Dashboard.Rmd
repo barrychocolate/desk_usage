@@ -1,0 +1,76 @@
+---
+title: "Desk Usage"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: columns
+    vertical_layout: fill
+    storyboard: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+list_of_packages <- c("dplyr", "flexdashboard")
+
+new_packages <- list_of_packages[!(list_of_packages %in% installed.packages()[,"Package"])]
+if(length(new_packages)) install.packages(new_packages, repos = "https://cloud.r-project.org/")
+
+#Load required packages
+lapply(list_of_packages, library, character.only = TRUE)
+```
+
+
+```{r summary_stats, echo=FALSE}
+attendance <- read.csv("C:/Analysis/R_Studio/Hackathon/data/Problem 3 Desk Usage/attendance.csv")
+desks <-  read.csv("C:/Analysis/R_Studio/Hackathon/data/Problem 3 Desk Usage/desks.csv")
+people <- read.csv("C:/Analysis/R_Studio/Hackathon/data/Problem 3 Desk Usage/people.csv")
+
+#Total number of desks in the building
+desk_total <- as.vector(count(desks))
+#Total number of staff
+staff_total <- count(people)
+#Total number of teams
+teams_total <- desks %>%
+	group_by(Team) %>%
+	summarise(staff = n())
+
+#Unique visitors to the building in 
+unique_visitors_per_year <-   filter(attendance, Visitor_Flag == "Yes") %>%
+	group_by(Username) %>%
+	summarise(count = n()) %>%
+	summarise(count = n()) 
+```
+
+Summary Stats
+=====================================  
+
+Column {data-width=650}
+-----------------------------------------------------------------------
+
+### Desks
+
+```{r}
+
+```
+
+Column {data-width=350}
+-----------------------------------------------------------------------
+
+### Chart B
+
+```{r}
+
+```
+
+### Chart C
+
+```{r}
+valueBox(4380, caption = "Desks", icon="fa-thumbs-down")
+```
+
+Heat Map
+=====================================  
+
+
+Model
+=====================================  
