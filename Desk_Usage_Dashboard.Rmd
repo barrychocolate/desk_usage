@@ -55,18 +55,11 @@ max_utilisation_perc <- round((max_utilisation$count / desk_total$n) * 100, 0)
 ```
 
 
-Summary Stats
+Summary Stats {data-orientation=rows}
 =====================================  
 
 
-Column {data-width=650}
------------------------------------------------------------------------
-
-### Desk Usage Optimisation
-
-Explanation of the challenge and our approach goes here.
-
-Column {data-width=350}
+Row
 -----------------------------------------------------------------------
 
 ### Desk Total
@@ -87,6 +80,15 @@ valueBox(staff_total, caption = "Total number of Staff", icon="fa-user-tie")
 valueBox(teams_total, caption = "Total number of teams", icon="fa-users")
 ```
 
+Row
+-----------------------------------------------------------------------
+
+### Max Building Utilisation Date
+
+```{r}
+valueBox(max_utilisation_date, caption = "Max Utilisation Date", icon="fa-calendar-alt")
+```
+
 ### Max Building Utilisation
 
 ```{r}
@@ -94,11 +96,11 @@ gauge(max_utilisation_perc, min = 0, max = 100, symbol = '%', gaugeSectors(
   success = c(80, 100), warning = c(40, 79), danger = c(0, 39)))
 ```
 
-### Max Building Utilisation Date
 
-```{r}
-valueBox(max_utilisation_date, caption = "Max Utilisation Date", icon="fa-calendar-alt")
-```
+Row
+-----------------------------------------------------------------------
+
+Explanation of the project and our approach goes here
 
 Heat Map
 =====================================  
