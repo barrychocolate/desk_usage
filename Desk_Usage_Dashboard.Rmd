@@ -8,7 +8,7 @@ output:
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE)
 
-list_of_packages <- c("dplyr", "tidyverse", "flexdashboard", "scales")
+list_of_packages <- c("dplyr", "tidyverse", "flexdashboard", "scales", "here")
 
 new_packages <- list_of_packages[!(list_of_packages %in% installed.packages()[,"Package"])]
 if(length(new_packages)) install.packages(new_packages, repos = "https://cloud.r-project.org/")
@@ -19,12 +19,16 @@ lapply(list_of_packages, library, character.only = TRUE)
 
 
 ```{r summary_stats, echo=FALSE}
-attendance <- read.csv("C:/Analysis/R_Studio/Hackathon/data/Problem 3 Desk Usage/attendance.csv")
-desks <-  read.csv("C:/Analysis/R_Studio/Hackathon/data/Problem 3 Desk Usage/desks.csv")
-people <- read.csv("C:/Analysis/R_Studio/Hackathon/data/Problem 3 Desk Usage/people.csv")
+attendance <- read.csv(here("/data/Problem 3 Desk Usage/attendance.csv"))
+desks <-  read.csv(here("/data/Problem 3 Desk Usage/desks.csv"))
+people <- read.csv(here("data/Problem 3 Desk Usage/people.csv"))
 
 #Attendance - convert to date
 attendance$Date <- as.Date(attendance$Date, "%d/%m/%Y")
+
+#Assign visitors to the Unassigned team
+levels(attendance$Team) <- c(levels(attendance$Team), "Unassigned") 
+attendance$Team[attendance$Visitor_Flag=="Yes"] <- "Unassigned"
 
 #Total number of desks in the building
 desk_total <- as.vector(count(desks))
@@ -87,6 +91,10 @@ heatmap_data <- heatmap_data[ , !(names(heatmap_data) %in% drops)]
 
 heatmap_data <- heatmap_data %>%
   spread(Team, team_util_perc)
+
+#Replace na values caused by teams not having an allocation
+heatmap_data[is.na(heatmap_data)] <- 0
+
 
 #order by date
 heatmap_data <- subset( heatmap_data, select = -Date )
@@ -170,15 +178,15 @@ Row
 
 Explanation of the project and our approach goes here
 
-Heat Map
+Team Utilisation
 =====================================  
 
 
 Row
 -----------------------------------------------------------------------
 ```{r}
-# Default Heatmap
-#heatmap(as.matrix(heatmap_data))
+#boxplot(x, data=heatmap_data$)
+
 ```
 
 
