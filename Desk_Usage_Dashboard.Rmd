@@ -8,7 +8,7 @@ output:
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE)
 
-list_of_packages <- c("dplyr", "tidyverse", "flexdashboard", "scales", "here")
+list_of_packages <- c("dplyr", "tidyverse", "flexdashboard", "scales", "here", "plotly", "crosstalk")
 
 new_packages <- list_of_packages[!(list_of_packages %in% installed.packages()[,"Package"])]
 if(length(new_packages)) install.packages(new_packages, repos = "https://cloud.r-project.org/")
@@ -19,9 +19,9 @@ lapply(list_of_packages, library, character.only = TRUE)
 
 
 ```{r summary_stats, echo=FALSE}
-attendance <- read.csv(here("data/Problem 3 Desk Usage/attendance.csv"))
-desks <-  read.csv(here("data/Problem 3 Desk Usage/desks.csv"))
-people <- read.csv(here("data/Problem 3 Desk Usage/people.csv"))
+attendance <- read.csv(here("data/attendance.csv"))
+desks <-  read.csv(here("data/desks.csv"))
+people <- read.csv(here("data/people.csv"))
 
 #Attendance - convert to date
 attendance$Date <- as.Date(attendance$Date, "%d/%m/%Y")
@@ -80,10 +80,19 @@ heatmap_data[is.na(heatmap_data)] <- 0
 
 #Calculate weekday
 heatmap_data$day <- weekdays(as.Date(heatmap_data$Date))
+heatmap_data$day <- as.factor(heatmap_data$day)
+
+
+heatmap_data$day = factor(heatmap_data$day,order = TRUE, levels = c("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"))
+#heatmap_data <-heatmap_data%>%
+#  mutate(factor(day, level=c("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday")))
+
 
 #Calculate teams daily usage based on allocation
 heatmap_data$team_util_perc <- round((heatmap_data$count / heatmap_data$daily_alocation ) * 100, digits = 0)
 heatmap_data$team_util_perc[heatmap_data$daily_alocation==0] <- 101
+
+boxplot_data <- heatmap_data
 
 #Transpose data to make a table for the heatmap
 drops <- c("count","daily_alocation", "day")
@@ -178,17 +187,104 @@ Row
 
 Explanation of the project and our approach goes here
 
-Team Utilisation
+Team Weekday Utilisation Comparison
 =====================================  
 
 
 Row
 -----------------------------------------------------------------------
+
 ```{r}
-#boxplot(x, data=heatmap_data$)
+#boxplot(boxplot_data$team_util_perc~boxplot_data$day, data=boxplot_data)
+boxplot_data <-  subset(boxplot_data, Team =="Defodio" | Team == "Liberacorpus" | Team == "Mobilicorpus"| Team == "Specialis Revelio")
+
+boxplot_data <-  subset(boxplot_data, day =="Monday" | day == "Tuesday" | day == "Wednesday"| day == "Thursday" | day == "Friday")
+
+
+p2 <- ggplot(boxplot_data) +
+ aes(x = day, y = team_util_perc, fill = Team) +
+ geom_boxplot() +
+ scale_fill_hue() +
+ labs(x = "Day", y = "Utilisation %", title = "Weekday Utilisation") +
+ theme_minimal()
+p2
+#ggplotly(p2)
+```
+
+
+Weekday Count
+=====================================
+
+This charts show us the distribution of  per team and by weekday
+
+Row
+-----------------------------------------------------------------------
+
+```{r}
+Attendance_per_day<-attendance%>%
+  mutate(day= weekdays(as.Date(Date)))%>%
+  mutate(day=factor(day, level=c('Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday','Friday','Saturday')))%>%
+  group_by(day, Team)%>%
+  summarise(count=n())
+
+reactive_crosstalk<-crosstalk::SharedData$new(Attendance_per_day)
+
+crosstalk::filter_checkbox(id='Site',
+                           label = 'Pick one or more',
+                           allLevels = TRUE,
+                           sharedData = reactive_crosstalk,
+                           group = ~factor(Team),
+                            inline = T)
+
+plot_ly(
+  reactive_crosstalk,
+  x=~day,
+  y=~count, 
+  marker = list(size = 10,
+                       color = 'rgba(255, 182, 193, .9)',
+                       line = list(color = 'rgba(152, 0, 0, .8)',
+                                   width = 2)))
 
 ```
 
 
-Model
-=====================================  
+Daily Utilisation
+=====================================
+
+Row
+-----------------------------------------------------------------------
+
+This chart a plot of the daily usage per team
+
+```{r}
+allocation_percent<-attendance%>%
+  mutate(date=as.Date(Date, format="%d/%m/%Y"))%>%
+  group_by(date, Team)%>%
+  summarise(daily_visits=n())%>%
+left_join(desks%>%
+  group_by(Team)%>%
+  summarise(desk_allocated=n()), by='Team')%>%
+  #remove sites with no allocated desks
+  filter(!is.na(desk_allocated))%>%
+  mutate(percent=(daily_visits/desk_allocated)*100)%>%
+  select(-daily_visits, -desk_allocated)
+
+reactive_crosstalk<-crosstalk::SharedData$new(allocation_percent)
+
+crosstalk::filter_checkbox(id='Site',
+                           label = 'Pick one or more',
+                           allLevels = TRUE,
+                           sharedData = reactive_crosstalk,
+                           group = ~factor(Team),
+                            inline = T)
+
+plot_ly(
+  reactive_crosstalk,
+  x=~date,
+  y=~percent, 
+  marker = list(size = 10,
+                       color = 'rgba(255, 182, 193, .9)',
+                       line = list(color = 'rgba(152, 0, 0, .8)',
+                                   width = 2)))
+
+
