@@ -19,8 +19,8 @@ lapply(list_of_packages, library, character.only = TRUE)
 
 
 ```{r summary_stats, echo=FALSE}
-attendance <- read.csv(here("/data/Problem 3 Desk Usage/attendance.csv"))
-desks <-  read.csv(here("/data/Problem 3 Desk Usage/desks.csv"))
+attendance <- read.csv(here("data/Problem 3 Desk Usage/attendance.csv"))
+desks <-  read.csv(here("data/Problem 3 Desk Usage/desks.csv"))
 people <- read.csv(here("data/Problem 3 Desk Usage/people.csv"))
 
 #Attendance - convert to date
